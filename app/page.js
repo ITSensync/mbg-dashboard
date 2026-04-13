@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { SunIcon, MoonIcon, WifiIcon, XMarkIcon, SparklesIcon, CloudIcon, BoltIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import DashboardCard from '../components/DashboardCard';
 
 const initialMetrics = [
@@ -29,15 +31,21 @@ const getSensorStatus = (metrics) => {
   const allNormal = phNormal && turbidityNormal && conductivityNormal;
 
   if (allNormal) {
-    return 'Sensor membaca kondisi air saat ini — performa stabil.';
+    return 'Hasil Pembacaan - performa stabil.';
   } else {
     const issues = [];
     if (!phNormal) issues.push('pH abnormal');
     if (!turbidityNormal) issues.push('turbidity tinggi');
     if (!conductivityNormal) issues.push('conductivity abnormal');
 
-    return `Sensor mendeteksi kondisi air — ${issues.join(', ')}.`;
+    return `Hasil Pembacaan - ${issues.join(', ')}.`;
   }
+};
+
+const metricIcons = {
+  ph: SparklesIcon,
+  turbidity: CloudIcon,
+  conductivity: BoltIcon,
 };
 
 export default function Page() {
@@ -123,6 +131,7 @@ export default function Page() {
         <section className="dashboard-panel">
           <div className="top-bar">
             <div className="device-title">
+              <Image src="/sensync-logo.png" alt="Sensync logo" width={28} height={28} className="device-logo" />
               <span style={{ fontWeight: 'bold' }}>Sensync</span>
               <span>|</span>
               <span>MBG</span>
@@ -136,8 +145,15 @@ export default function Page() {
               >
                 {mode === 'dark' ? '☀️' : '🌙'}
               </button>
-              <span className={`signal ${online ? 'online' : 'offline'}`}>
-                {online ? 'ONLINE' : 'OFFLINE'}
+              <span
+                className={`signal ${online ? 'online' : 'offline'}`}
+                role="status"
+                aria-label={online ? 'Online' : 'Offline'}
+              >
+                <span className="signal-icon-wrap">
+                  <WifiIcon className="signal-svg" />
+                  {!online && <XMarkIcon className="signal-overlay" />}
+                </span>
               </span>
               <span className="clock">{formatClock(currentTime)}</span>
             </div>
@@ -156,6 +172,7 @@ export default function Page() {
               <DashboardCard
                 key={metric.key}
                 label={metric.label}
+                Icon={metricIcons[metric.key]}
                 value={metric.value.toFixed(2)}
                 unit={metric.unit}
                 description={metric.description}
@@ -164,7 +181,10 @@ export default function Page() {
           </div>
 
           <div className="footer-note">
-            <span>{getSensorStatus(metrics)}</span>
+            <span className="footer-summary">
+              <DocumentTextIcon className="summary-icon" />
+              {getSensorStatus(metrics)}
+            </span>
             <small className="watermark">© sensync {new Date().getFullYear()}</small>
           </div>
         </section>
