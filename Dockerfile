@@ -23,6 +23,7 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/app ./app
 COPY --from=builder /app/components ./components
 COPY --from=builder /app/styles ./styles
+COPY --from=builder /app/public ./public
 
 RUN npm ci --omit=dev
 
