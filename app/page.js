@@ -6,9 +6,9 @@ import { SunIcon, MoonIcon, WifiIcon, XMarkIcon, SparklesIcon, CloudIcon, BoltIc
 import DashboardCard from '../components/DashboardCard';
 
 const initialMetrics = [
-  { key: 'ph', label: 'pH', value: 7.45, unit: '', description: 'Keseimbangan asam basa dalam air.' },
-  { key: 'turbidity', label: 'Turbidity', value: 1.32, unit: 'NTU', description: 'Kejernihan air dalam satuan NTU.' },
-  { key: 'conductivity', label: 'Conductivity', value: 420.8, unit: 'µS/cm', description: 'Kemampuan penghantaran listrik air.' },
+  { key: 'ph', label: 'pH', value: 0, unit: '', description: 'Keseimbangan asam basa dalam air.' },
+  { key: 'turbidity', label: 'Turbidity', value: 0, unit: 'NTU', description: 'Kejernihan air dalam satuan NTU.' },
+  { key: 'cond', label: 'Conductivity', value: 0, unit: 'µS/cm', description: 'Kemampuan penghantaran listrik air.' },
 ];
 
 const formatClock = (date) => {
@@ -45,15 +45,16 @@ const getSensorStatus = (metrics) => {
 const metricIcons = {
   ph: SparklesIcon,
   turbidity: CloudIcon,
-  conductivity: BoltIcon,
+  cond: BoltIcon,
 };
 
 export default function Page() {
   const [metrics, setMetrics] = useState(initialMetrics);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState(null);
   const [online, setOnline] = useState(true);
-  const [updatedAt, setUpdatedAt] = useState(new Date());
+  const [updatedAt, setUpdatedAt] = useState(null);
   const [mode, setMode] = useState('dark');
+  const [socketConnected, setSocketConnected] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -109,20 +110,72 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMetrics((prev) =>
-        prev.map((metric) => {
-          const variation = (Math.random() - 0.5) * 0.2;
-          return {
-            ...metric,
-            value: Number(Math.max(0, metric.value + variation).toFixed(2)),
-          };
-        })
-      );
-      setUpdatedAt(new Date());
-    }, 8000);
+    if (typeof window === 'undefined') return;
 
-    return () => clearInterval(interval);
+    const websocketUrl =
+      process.env.NEXT_PUBLIC_WEBSOCKET_URL ||
+      `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
+
+    const socket = new WebSocket(websocketUrl);
+
+    socket.addEventListener('open', () => {
+      setSocketConnected(true);
+      setOnline(true);
+    });
+
+    socket.addEventListener('message', (event) => {
+      try {
+        const payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        const eventType = payload.event || null;
+        const data = payload.data ?? payload;
+
+        if (eventType === 'main-reading.latest' && data) {
+          setMetrics((prev) =>
+            prev.map((metric) => {
+              if (data?.[metric.key] !== undefined && !Number.isNaN(Number(data[metric.key]))) {
+                return {
+                  ...metric,
+                  value: Number(data[metric.key]),
+                };
+              }
+              return metric;
+            })
+          );
+          setUpdatedAt(new Date());
+        } else if (eventType === 'main-reading.error') {
+          console.warn('WebSocket server reported error:', data?.message || payload.message);
+        } else if (data && (data.ph !== undefined || data.turbidity !== undefined || data.cond !== undefined)) {
+          setMetrics((prev) =>
+            prev.map((metric) => {
+              if (data?.[metric.key] !== undefined && !Number.isNaN(Number(data[metric.key]))) {
+                return {
+                  ...metric,
+                  value: Number(data[metric.key]),
+                };
+              }
+              return metric;
+            })
+          );
+          setUpdatedAt(new Date());
+        }
+      } catch (error) {
+        console.warn('WebSocket message parse failed', error);
+      }
+    });
+
+    socket.addEventListener('close', () => {
+      setSocketConnected(false);
+      setOnline(false);
+    });
+
+    socket.addEventListener('error', () => {
+      setSocketConnected(false);
+      setOnline(false);
+    });
+
+    return () => {
+      socket.close();
+    };
   }, []);
 
   return (
@@ -155,7 +208,7 @@ export default function Page() {
                   {!online && <XMarkIcon className="signal-overlay" />}
                 </span>
               </span>
-              <span className="clock">{formatClock(currentTime)}</span>
+              <span className="clock">{currentTime ? formatClock(currentTime) : '--:--:--'}</span>
             </div>
           </div>
 
@@ -164,7 +217,7 @@ export default function Page() {
               <p className="eyebrow">Pembacaan Sensor</p>
               <h1>pH · Turbidity · Conductivity</h1>
             </div>
-            <div className="last-update">Last sync {formatClock(updatedAt)}</div>
+            <div className="last-update">Last sync {updatedAt ? formatClock(updatedAt) : '–'}</div>
           </div>
 
           <div className="metrics-grid">
