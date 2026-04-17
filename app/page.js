@@ -114,7 +114,7 @@ export default function Page() {
 
     const websocketUrl =
       process.env.NEXT_PUBLIC_WEBSOCKET_URL ||
-      `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
+      `ws://localhost:8080`;
 
     const socket = new WebSocket(websocketUrl);
 
