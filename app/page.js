@@ -234,10 +234,6 @@ export default function Page() {
           </div>
 
           <div className="footer-note">
-            // <span className="footer-summary">
-            //   <DocumentTextIcon className="summary-icon" />
-            //   {getSensorStatus(metrics)}
-            // </span>
             <small className="watermark">© sensync {new Date().getFullYear()}</small>
           </div>
         </section>
