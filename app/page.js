@@ -6,7 +6,7 @@ import { SunIcon, MoonIcon, WifiIcon, XMarkIcon, SparklesIcon, CloudIcon, BoltIc
 import DashboardCard from '../components/DashboardCard';
 
 const initialMetrics = [
-  { key: 'ph', label: 'pH', value: 0, unit: '', description: 'Keseimbangan asam basa dalam air.' },
+  { key: 'ph', label: 'pH - (Baku Mutu 6-9)', value: 0, unit: '', description: 'Keseimbangan asam basa dalam air.' },
   { key: 'turbidity', label: 'Turbidity', value: 0, unit: 'NTU', description: 'Kejernihan air dalam satuan NTU.' },
   { key: 'cond', label: 'Conductivity', value: 0, unit: 'µS/cm', description: 'Kemampuan penghantaran listrik air.' },
 ];
@@ -234,10 +234,10 @@ export default function Page() {
           </div>
 
           <div className="footer-note">
-            <span className="footer-summary">
-              <DocumentTextIcon className="summary-icon" />
-              {getSensorStatus(metrics)}
-            </span>
+            // <span className="footer-summary">
+            //   <DocumentTextIcon className="summary-icon" />
+            //   {getSensorStatus(metrics)}
+            // </span>
             <small className="watermark">© sensync {new Date().getFullYear()}</small>
           </div>
         </section>
